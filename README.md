@@ -1,6 +1,7 @@
-# claude-skills-build-tool: Medallion Architecture for Claude workflows
+# claude-skills-build-tool (Project Devil Fruit)
+_Medallion Architecture for Claude workflows_
 
-Organizing Claude Commands and Skills by borrowing structural patterns from reproducible data science, data engineering, compositional patterns from agentic frameworks, and semantic patterns from domain modeling.
+Organizing Claude Commands and Skills by borrowing structural patterns from reproducible data science, data engineering, compositional patterns from agentic frameworks, and semantic patterns from domain modeling. circa January 10, 2026.
 
 ## Core Concept
 
