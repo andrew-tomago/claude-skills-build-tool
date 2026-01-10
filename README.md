@@ -7,11 +7,11 @@ Organizing Claude Commands and Skills by borrowing structural patterns from repr
 
 | Layer | Inspiration | Purpose | Output |
 |-------|-------------|---------|--------|
-| **Bronze** | data Staging | Atomic, single-purpose commands | `cmd_source__purpose.md` |
-| **Silver** | LangChain | Workflow chains, tools, and agent roles | `int_domain__function.md` |
-| **Gold** | data Marts, Domain-Driven Design | Bounded contexts as skills | `SKILL.md` |
+| **Act** | data Staging | Atomic, single-purpose actions | `fetch_pr_diff.md` |
+| **Chain** | LangChain | Workflow chains, tools, and agent roles | `pr_review_workflow.md` |
+| **Skills** | data Marts, Domain-Driven Design | Bounded contexts as skills | `~/.claude/skills/[domain]/` |
 
-The arc: **source-conformed inputs → composed capabilities → domain-aligned skills**
+The arc: **bounded actions → composed workflows → domain-aligned skills**
 
 ## Conceptual Foundations
 
@@ -19,72 +19,72 @@ The arc: **source-conformed inputs → composed capabilities → domain-aligned 
 
 Data engineering established that raw inputs should flow through deliberate transformation layers before consumption. dbt's staging → intermediate → marts pattern encodes this: clean your atoms, compose your molecules, expose your products.
 
-**Consumption flows down; development flows up.** You use gold skills. When a skill doesn't cover your use case, trace upward through silver compositions to bronze atoms, build what's missing, then expose it downstream.
+**Consumption flows down; development flows up.** You use skills. When a skill doesn't cover your use case, trace upward through workflow chains to atomic actions, build what's missing, then expose it downstream.
 
 ### Compositional Chains (LangChain)
 
 Agentic frameworks demonstrated that complex capabilities emerge from composing simple operations. A chain is a sequence of calls where each step's output feeds the next. Tools extend what an agent can do. Agent roles define specialized personas for delegation.
 
-Silver embodies this: bronze commands chain into workflows, tools wrap external capabilities, agent definitions encode reusable personas.
+Chain embodies this: atomic actions compose into workflows, tools wrap external capabilities, agent definitions encode reusable personas.
 
 ### Bounded Contexts (Domain-Driven Design)
 
 DDD established that large systems should decompose into bounded contexts—areas with consistent language and clear boundaries. Within a context, terms have precise meanings. Between contexts, translation is explicit.
 
-Gold embodies this: each domain skill is a bounded context with its own ubiquitous language. The `coding/` skill defines what "review," "test," and "document" mean in that context. The `writing/` skill may use the same words differently. Skills communicate through explicit interfaces, not assumed shared meaning.
+Skills embody this: each domain skill is a bounded context with its own ubiquitous language. The `coding/` skill defines what "review," "test," and "document" mean in that context. The `writing/` skill may use the same words differently. Skills communicate through explicit interfaces, not assumed shared meaning.
 
 ## Directory Structure
 
 ```
 .claude/
 ├── commands/
-│   ├── _dev/                          # Development workspace (EXCLUDED from docs)
-│   │   └── wip_*.md                   # Work-in-progress at any abstraction (insp. by dbt dev schemas)
+│   ├── _dev/                              # Development workspace (EXCLUDED from docs)
+│   │   └── wip_*.md                       # Work-in-progress at any abstraction (insp. by dbt dev schemas)
 │   │
-│   ├── bronze/                        # Atomic commands (staging)
+│   ├── act/                               # Atomic actions (staging)
 │   │   └── [source]/
-│   │       └── cmd_source__purpose.md
+│   │       └── fetch_pr_diff.md           # Self-describing action names
 │   │
-│   ├── silver/                        # workflow chains, tools, agents (intermediate)
-│   │   └── [domain]/
-│   │       ├── int_domain__func.md    # Chains
-│   │       ├── tool_domain__name.md   # Tools
-│   │       └── agent_domain__role.md  # Agent roles
-│   │
-│   └── gold/                          # Bounded contexts (marts)
+│   └── chain/                             # Workflow chains, tools, agents (intermediate)
 │       └── [domain]/
-│           ├── SKILL.md               # Context definition
-│           └── knowledge/             # Domain knowledge
+│           ├── pr_review_workflow.md      # Workflow chains (with _workflow suffix)
+│           ├── tool_github_api.md         # Tools
+│           └── agent_code_reviewer.md     # Agent roles
 │
-├── shared/                            # Utility commands used across layers (insp. by dbt macros)
+├── skills/                                # Bounded contexts (marts) - per Claude Code docs
+│   └── [domain]/
+│       ├── SKILL.md                       # Context definition
+│       └── knowledge/                     # Domain knowledge
+│
+├── shared/                                # Utility commands used across layers (insp. by dbt macros)
 │   └── [name].md
 │
-└── docs/                              # Documentation (insp. by mkdocs-style)
-    ├── index.md                       # Documentation home
-    ├── getting-started.md             # Onboarding guide
+└── docs/                                  # Documentation (insp. by mkdocs-style)
+    ├── index.md                           # Documentation home
+    ├── getting-started.md                 # Onboarding guide
     ├── reference/
-    │   ├── conventions.md             # Style guide
-    │   └── lineage.md                 # Dependency graph
+    │   ├── conventions.md                 # Style guide
+    │   └── lineage.md                     # Dependency graph
     └── guides/
-        └── development-workflow.md    # How to develop commands
+        └── development-workflow.md        # How to develop commands
 ```
 
 ## Layer Specifications
 
-### Bronze: Atomic Commands
+### Act: Atomic Actions
 
 **Inspiration**: dbt staging models
 
-Single-purpose commands that do one thing. The atoms from which everything else composes.
+Single-purpose actions that do one thing. The atoms from which everything else composes.
 
 ```markdown
 ---
-name: cmd_source__purpose
+name: fetch_pr_diff
 description: Single-sentence purpose
 ---
 
 # Purpose
-[What this command does—one thing only]
+[What this action does—one thing only]
 
 # Prompt
 [The prompt content]
@@ -93,47 +93,56 @@ description: Single-sentence purpose
 [Invocation example]
 ```
 
+**Naming Convention**: Self-describing action names (verb + object pattern)
+- Examples: `fetch_pr_diff.md`, `analyze_security_patterns.md`, `generate_docstring.md`
+- No prefixes like `cmd_` — the name itself describes the bounded action
+
 **Organization**: By input source (where data comes from)
 - `github/` — PRs, issues, repository content
 - `files/` — Local file content
 - `cli/` — Command-line interactions
 
 **Principles**:
-- One command, one capability
+- One action, one capability
 - No orchestration logic
 - Testable in isolation
+- Self-describing names
 
 ---
 
-### Silver: Workflow Chains, Tools, and Agents (insp. by Langchain)
+### Chain: Workflow Chains, Tools, and Agents
 
 **Inspiration**: LangChain's compositional abstractions
 
-Silver composes bronze atoms into higher-order capabilities through three patterns:
+Chain composes atomic actions into higher-order capabilities through three patterns:
 
-#### Chains (`int_`)
+#### Workflow Chains (`_workflow`, `_chain`)
 
 Sequential composition where each step builds on the previous. A chain encodes a workflow: "do A, then B, then C."
 
 ```markdown
 ---
-name: int_domain__function
+name: pr_review_workflow
 dependencies:
-  - cmd_source__one
-  - cmd_source__two
+  - fetch_pr_diff
+  - analyze_code_patterns
 ---
 
 # Purpose
 [What this workflow accomplishes]
 
 # Chain
-1. [Step] → cmd_source__one
-2. [Step] → cmd_source__two  
+1. [Step] → fetch_pr_diff
+2. [Step] → analyze_code_patterns
 3. [Orchestration logic]
 
 # Prompt
 [The composed prompt]
 ```
+
+**Naming Convention**: Self-describing workflow names with `_workflow` or `_chain` suffix
+- Examples: `pr_review_workflow.md`, `module_documentation_chain.md`, `security_audit_workflow.md`
+- The suffix makes it clear this is a composed workflow, not an atomic action
 
 Chains are more than sequences—they encode decision points, error handling, and conditional branches. The chain abstraction captures the *reasoning flow*, not just the steps.
 
@@ -143,7 +152,7 @@ Capability extensions that wrap external functionality. Tools give agents new po
 
 ```markdown
 ---
-name: tool_domain__name
+name: tool_github_api
 ---
 
 # Purpose
@@ -164,7 +173,7 @@ Specialized personas for delegation. An agent role defines expertise, constraint
 
 ```markdown
 ---
-name: agent_domain__role
+name: agent_code_reviewer
 ---
 
 # Role
@@ -189,11 +198,13 @@ Agent roles enable delegation within complex workflows. The "reviewer" agent has
 
 ---
 
-### Gold: Bounded Contexts as Skills
+### Skills: Bounded Contexts
 
 **Inspiration**: Domain-Driven Design
 
-Gold skills are bounded contexts—coherent areas of domain knowledge with consistent language and clear boundaries.
+**Location**: `~/.claude/skills/[domain]/` per Claude Code documentation
+
+Skills are bounded contexts—coherent areas of domain knowledge with consistent language and clear boundaries.
 
 #### Ubiquitous Language
 
@@ -215,7 +226,7 @@ Document the language explicitly:
 
 #### Context Boundaries
 
-Skills generally don't share assumptions. If `coding/` needs something from `writing/`, either the interface in the workflow chain is explicit, or consider abstracting foundational commands into shared/. This prevents concepts from one domain bleeding into another and creating confusion.
+Skills generally don't share assumptions. If `coding/` needs something from `writing/`, either the interface in the workflow chain is explicit, or consider abstracting foundational actions into shared/. This prevents concepts from one domain bleeding into another and creating confusion.
 
 ```markdown
 ---
@@ -231,10 +242,10 @@ name: coding
 [Terms and their meanings here]
 
 ## Capabilities
-| Task | Command |
-|------|---------|
-| Document module | `int_coding__document_module` |
-| Review PR | `int_coding__pr_review` |
+| Task | Workflow |
+|------|----------|
+| Document module | `module_documentation_workflow` |
+| Review PR | `pr_review_workflow` |
 
 ## Boundaries
 [What's explicitly outside this context]
@@ -248,7 +259,7 @@ name: coding
 Supporting documents in `knowledge/` are part of the bounded context. A style guide in `coding/knowledge/` uses the coding domain's language. Few-shot examples demonstrate the domain's patterns.
 
 ```
-gold/coding/
+~/.claude/skills/coding/
 ├── SKILL.md                    # Context definition
 └── knowledge/
     ├── python_style.md         # Domain conventions
@@ -270,8 +281,8 @@ Like dbt's dev schemas, `_dev/` isolates work-in-progress:
 
 ```
 commands/_dev/
-├── wip_new_chain.md           # Drafting a silver chain
-├── wip_security_check.md      # Iterating on bronze command
+├── wip_new_workflow.md        # Drafting a workflow chain
+├── wip_security_check.md      # Iterating on an action
 └── wip_ops_skill.md           # Sketching a new bounded context
 ```
 
@@ -344,18 +355,18 @@ These are explicitly shared—they don't belong to any single context. Reference
 ```
 1. USE CONTEXT       2. IDENTIFY GAP        3. DEVELOP UP          4. EXPOSE DOWN
    ↓                    ↓                      ↓                      ↓
-   Skill works?    →   Missing chain,     →   Build in bronze    →   Chain in silver
-   Yes: done           tool, or atom?         or silver              Expose in gold
+   Skill works?    →   Missing workflow,  →   Build in act       →   Chain in chain
+   Yes: done           tool, or action?       or chain               Expose in skills
 ```
 
 **Example**: PR reviews need security analysis.
 
 1. **Use context**: `coding/SKILL.md` has review but no security focus
-2. **Check chains**: `int_coding__pr_review` exists, no security step
-3. **Check atoms**: No `cmd_security__*` exists
-4. **Build atom**: Create `cmd_security__check_patterns.md` in bronze
-5. **Extend chain**: Add security step to `int_coding__pr_review`
-6. **Context gains capability**: Skill inherits through chain
+2. **Check workflows**: `pr_review_workflow` exists, no security step
+3. **Check actions**: No security actions exist
+4. **Build action**: Create `analyze_security_patterns.md` in act/security/
+5. **Extend workflow**: Add security step to `pr_review_workflow`
+6. **Context gains capability**: Skill inherits through workflow chain
 
 ---
 
@@ -364,14 +375,14 @@ These are explicitly shared—they don't belong to any single context. Reference
 Document dependencies in `docs/lineage.md`:
 
 ```
-gold/coding/SKILL.md
-├── int_coding__pr_review          (chain)
-│   ├── cmd_github__fetch_diff     (atom)
-│   ├── cmd_review__analyze        (atom)
-│   └── cmd_security__check        (atom) ← new
-├── int_coding__document_module    (chain)
-│   └── cmd_snippets__docstring    (atom)
-└── agent_coding__reviewer         (role)
+~/.claude/skills/coding/SKILL.md
+├── pr_review_workflow             (workflow)
+│   ├── fetch_pr_diff              (action)
+│   ├── analyze_code_patterns      (action)
+│   └── analyze_security_patterns  (action) ← new
+├── module_documentation_workflow  (workflow)
+│   └── generate_docstring         (action)
+└── agent_code_reviewer            (agent role)
 ```
 
 This is documentation, not enforcement.
@@ -382,24 +393,24 @@ This is documentation, not enforcement.
 
 **No runtime composition.** LangChain chains execute at runtime with actual data flow. These chains are documentation of intended composition—the "chaining" is conceptual, not mechanical.
 
-**No build step.** dbt compiles and executes in dependency order. Commands don't really "build" in the same way, but they have a lineage as they "build" on one another. Lineage should be maintained in a more programmatic way.
+**No build step.** dbt compiles and executes in dependency order. Actions and workflows don't really "build" in the same way, but they have a lineage as they "build" on one another. Lineage should be maintained in a more programmatic way.
 
 **No shared type system.** DDD bounded contexts in code have explicit interfaces with typed contracts. Here, "interfaces" are sequences, command handoffs, and conventions enforced through discipline.
 
-**This is a filing system with conceptual scaffolding.** The value is in the mental model: commands compose into chains, chains serve bounded contexts (skills). Without runtime tooling, discipline is on you.
+**This is a filing system with conceptual scaffolding.** The value is in the mental model: actions compose into workflows, workflows serve bounded contexts (skills). Without runtime tooling, discipline is on you.
 
 ---
 
 ## When This Helps
 
-- Many commands need organization
+- Many actions and workflows need organization
 - You think in terms of composition and domains
 - Multiple contributors need shared conventions
 - You want explicit boundaries between capability areas
 
 ## When This Hurts
 
-- Few commands (flat files suffice)
+- Few actions or workflows (flat files suffice)
 - Solo work with stable patterns across a single domain (overhead without benefit)
 - You expect the structure to enforce something (it won't)
 
@@ -442,6 +453,6 @@ This structure draws inspiration from:
 - [Writing Your Docs](https://www.mkdocs.org/user-guide/writing-your-docs/)
 
 **Anthropic Claude**
-- Skills as domain knowledge packages, and the emerging Agent standard
-- Commands as reusable prompt patterns
+- Skills as domain knowledge packages in `~/.claude/skills/` per Claude Code documentation
+- Actions and workflows as reusable prompt patterns
 - [Claude Documentation](https://docs.anthropic.com/)
