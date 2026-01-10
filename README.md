@@ -381,11 +381,11 @@ This is documentation, not enforcement.
 
 **No runtime composition.** LangChain chains execute at runtime with actual data flow. These chains are documentation of intended composition—the "chaining" is conceptual, not mechanical.
 
-**No build step.** dbt compiles and executes in dependency order. Commands don't build. Lineage is maintained manually.
+**No build step.** dbt compiles and executes in dependency order. Commands don't really "build" in the same way, but they have a lineage as they "build" on one another. Lineage should be maintained in a more programmatic way.
 
-**No shared type system.** DDD bounded contexts in code have explicit interfaces with typed contracts. Here, "interfaces" are conventions you enforce through discipline.
+**No shared type system.** DDD bounded contexts in code have explicit interfaces with typed contracts. Here, "interfaces" are sequences, command handoffs, and conventions enforced through discipline.
 
-**This is a filing system with conceptual scaffolding.** The value is in the mental model: atoms compose into chains, chains serve bounded contexts. Without tooling, discipline is on you.
+**This is a filing system with conceptual scaffolding.** The value is in the mental model: commands compose into chains, chains serve bounded contexts (skills). Without runtime tooling, discipline is on you.
 
 ---
 
@@ -399,8 +399,8 @@ This is documentation, not enforcement.
 ## When This Hurts
 
 - Few commands (flat files suffice)
-- Solo work with stable patterns (overhead without benefit)
-- You expect the structure to enforce anything (it won't)
+- Solo work with stable patterns across a single domain (overhead without benefit)
+- You expect the structure to enforce something (it won't)
 
 ---
 
