@@ -54,7 +54,9 @@ Skills embody this: each domain skill is a bounded context with its own ubiquito
 ├── skills/                                # Bounded contexts (marts) - per Claude Code docs
 │   └── [domain]/
 │       ├── SKILL.md                       # Context definition
-│       └── knowledge/                     # Domain knowledge
+│       ├── scripts/                       # Executable scripts
+│       ├── references/                    # Domain knowledge loaded at runtime
+│       └── assets/                        # Images, templates, datafiles
 │
 ├── shared/                                # Utility commands used across layers (insp. by dbt macros)
 │   └── [name].md
@@ -256,16 +258,20 @@ name: coding
 
 #### Knowledge as Context
 
-Supporting documents in `knowledge/` are part of the bounded context. A style guide in `coding/knowledge/` uses the coding domain's language. Few-shot examples demonstrate the domain's patterns.
+Supporting materials in `references/` and `assets/` are part of the bounded context. Style guides, criteria, and examples in `references/` use the domain's language and are loaded at runtime. Templates, checklists, and data files in `assets/` support domain operations.
 
 ```
 ~/.claude/skills/coding/
 ├── SKILL.md                    # Context definition
-└── knowledge/
-    ├── python_style.md         # Domain conventions
-    ├── review_criteria.md      # What "review" means here
-    └── examples/
-        └── good_pr.md          # Pattern demonstration
+├── scripts/
+│   └── validate_pr.sh          # Automated checks
+├── references/
+│   ├── python_style.md         # Domain conventions
+│   ├── review_criteria.md      # What "review" means here
+│   └── good_pr.md              # Pattern demonstration
+└── assets/
+    └── templates/
+        └── review_checklist.md # Review template
 ```
 
 **Organization**: By bounded context (domain)
@@ -456,3 +462,7 @@ This structure draws inspiration from:
 - Skills as domain knowledge packages in `~/.claude/skills/` per Claude Code documentation
 - Actions and workflows as reusable prompt patterns
 - [Claude Documentation](https://docs.anthropic.com/)
+
+**Agent Skills**
+- Specification for building and structuring skills for agentic workflows
+- [Agent Skills Specification](https://agentskills.io/specification)
