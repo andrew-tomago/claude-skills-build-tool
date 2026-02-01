@@ -1,222 +1,112 @@
-# Claude Skills Build Tool 🍊 (Project Devil Fruit)
-_Medallion Architecture for Claude workflows_
+# Claude Skills Build Tool (Project Devil Fruit)
+_Skills-first architecture for Claude workflows_
 
-Organizing Claude Commands and Skills by borrowing structural patterns from reproducible data science, data engineering, compositional patterns from agentic frameworks, and semantic patterns from domain modeling. circa January 10, 2026.
+Structural patterns from data engineering (dbt), semantic patterns from domain modeling (DDD), applied to Claude Code skill organization. circa January 10, 2026.
 
 ## Core Concept
 
-| Layer | Inspiration | Purpose | Output |
-|-------|-------------|---------|--------|
-| **Act** | data Staging | Atomic, single-purpose actions | `fetch_pr_diff.md` |
-| **Chain** | LangChain | Workflow chains, tools, and agent roles | `pr_review_workflow.md` |
-| **Skills** | data Marts, Domain-Driven Design | Bounded contexts as skills | `~/.claude/skills/[domain]/` |
+| Layer | Inspiration | Purpose |
+|-------|-------------|---------|
+| **Skills** | data Marts, DDD | Source of truth — SKILL.md + supporting files |
+| **Commands** | dbt Staging | Development workspace + composition layer over skills |
+| **Plugins** | Package registries | Distribution — versioned, domain-bounded skill packages |
 
-The arc: **bounded actions → composed workflows → domain-aligned skills**
+The arc: **draft in `commands/_dev/` → promote to `skills/` → distribute via plugin**
 
 ## Conceptual Foundations
 
-### The Transformation Arc (dbt)
+### Transformation Arc (dbt)
 
-Data engineering established that raw inputs should flow through deliberate transformation layers before consumption. dbt's staging → intermediate → marts pattern encodes this: clean your atoms, compose your molecules, expose your products.
+Raw inputs flow through deliberate transformation layers before consumption: clean atoms, compose molecules, expose products.
 
-**Consumption flows down; development flows up.** You use skills. When a skill doesn't cover your use case, trace upward through workflow chains to atomic actions, build what's missing, then expose it downstream.
+**Consumption flows down; development flows up.** Skills serve as the consumption layer. When a skill doesn't cover a use case, draft what's missing in `commands/_dev/`, then promote downstream.
 
-### Compositional Chains (LangChain)
+### Bounded Contexts (DDD)
 
-Agentic frameworks demonstrated that complex capabilities emerge from composing simple operations. A chain is a sequence of calls where each step's output feeds the next. Tools extend what an agent can do. Agent roles define specialized personas for delegation.
+Large systems decompose into bounded contexts — areas with consistent language and clear boundaries. Within a context, terms have precise meaning. Between contexts, translation is explicit.
 
-Chain embodies this: atomic actions compose into workflows, tools wrap external capabilities, agent definitions encode reusable personas.
+**Plugins are the domain boundary.** Tags provide sufficient organization within a project's flat `skills/` folder. When a skill is promoted to a plugin, the plugin becomes the bounded context — a self-contained domain with its own ubiquitous language.
 
-### Bounded Contexts (Domain-Driven Design)
-
-DDD established that large systems should decompose into bounded contexts—areas with consistent language and clear boundaries. Within a context, terms have precise meanings. Between contexts, translation is explicit.
-
-Skills embody this: each domain skill is a bounded context with its own ubiquitous language. The `coding/` skill defines what "review," "test," and "document" mean in that context. The `writing/` skill may use the same words differently. Skills communicate through explicit interfaces, not assumed shared meaning.
+A `coding` plugin's "review" means code review with specific criteria. A `writing` plugin's "review" means editorial review. Same word, different bounded contexts, different meanings. Cross-plugin dependencies are explicit via `depends_on`.
 
 ## Directory Structure
+
+### Project Layout
 
 ```
 .claude/
 ├── commands/
-│   ├── _dev/                              # Development workspace (EXCLUDED from docs)
-│   │   └── wip_*.md                       # Work-in-progress at any abstraction (insp. by dbt dev schemas)
-│   │
-│   ├── act/                               # Atomic actions (staging)
-│   │   └── [source]/
-│   │       └── fetch_pr_diff.md           # Self-describing action names
-│   │
-│   └── chain/                             # Workflow chains, tools, agents (intermediate)
-│       └── [domain]/
-│           ├── pr_review_workflow.md      # Workflow chains (with _workflow suffix)
-│           ├── tool_github_api.md         # Tools
-│           └── agent_code_reviewer.md     # Agent roles
+│   ├── _dev/                   # Draft skills (project-level only; never in plugins)
+│   │   └── *.md                # [Skill] tagged — candidates for promotion
+│   ├── combos/                 # Composite commands chaining skills across domains
+│   │   └── *.md                # [Combo] tagged — requires depends_on
+│   └── specials/               # Modified/wrapped variants of existing skills
+│       └── *.md                # [Special] tagged
 │
-├── skills/                                # Bounded contexts (marts) - per Claude Code docs
-│   └── [domain]/
-│       ├── SKILL.md                       # Context definition
-│       ├── scripts/                       # Executable scripts
-│       ├── references/                    # Domain knowledge loaded at runtime
-│       └── assets/                        # Images, templates, datafiles
+├── skills/                     # Source of truth — flat structure, no domain subfolders
+│   └── <skill-name>/           # Tags organize; plugins provide domain boundaries
+│       ├── SKILL.md            # Required; eagerly loaded (under 500 lines)
+│       ├── template.md         # Optional — fill-in template
+│       ├── examples/           # Optional — example outputs
+│       └── scripts/            # Optional — executable scripts
 │
-├── shared/                                # Utility commands used across layers (insp. by dbt macros)
-│   └── [name].md
-│
-└── docs/                                  # Documentation (insp. by mkdocs-style)
-    ├── index.md                           # Documentation home
-    ├── getting-started.md                 # Onboarding guide
+└── docs/                       # Documentation (MkDocs-inspired)
+    ├── index.md
+    ├── getting-started.md
     ├── reference/
-    │   ├── conventions.md                 # Style guide
-    │   └── lineage.md                     # Dependency graph
+    │   ├── conventions.md      # Style guide + frontmatter schema
+    │   └── lineage.md          # Dependency graph
     └── guides/
-        └── development-workflow.md        # How to develop commands
+        └── development-workflow.md
 ```
 
-## Layer Specifications
+### Plugin Layout
 
-### Act: Atomic Actions
-
-**Inspiration**: dbt staging models
-
-Single-purpose actions that do one thing. The atoms from which everything else composes.
-
-```markdown
----
-name: fetch_pr_diff
-description: Single-sentence purpose
----
-
-# Purpose
-[What this action does—one thing only]
-
-# Prompt
-[The prompt content]
-
-# Usage
-[Invocation example]
+```
+plugin-repo/
+├── commands/                   # Optional
+│   ├── combos/                 # Optional — composite commands
+│   └── specials/               # Optional — specialized commands
+│
+├── skills/                     # The plugin IS the domain boundary
+│   └── <skill-name>/
+│       └── SKILL.md
+│
+├── plugin.json                 # Plugin manifest
+├── README.md
+└── CHANGELOG.md
 ```
 
-**Naming Convention**: Self-describing action names (verb + object pattern)
-- Examples: `fetch_pr_diff.md`, `analyze_security_patterns.md`, `generate_docstring.md`
-- No prefixes like `cmd_` — the name itself describes the bounded action
+**Key difference**: `_dev/` exists only in projects, never in plugins. `combos/` and `specials/` appear in both.
 
-**Organization**: By input source (where data comes from)
-- `github/` — PRs, issues, repository content
-- `files/` — Local file content
-- `cli/` — Command-line interactions
+## Skills
 
-**Principles**:
-- One action, one capability
-- No orchestration logic
-- Testable in isolation
-- Self-describing names
+**Inspiration**: DDD bounded contexts, [Claude Code skills](https://code.claude.com/docs/en/skills)
 
----
+Skills are the single source of truth. Commands are development artifacts or composition layers over skills.
 
-### Chain: Workflow Chains, Tools, and Agents
-
-**Inspiration**: LangChain's compositional abstractions
-
-Chain composes atomic actions into higher-order capabilities through three patterns:
-
-#### Workflow Chains (`_workflow`, `_chain`)
-
-Sequential composition where each step builds on the previous. A chain encodes a workflow: "do A, then B, then C."
-
-```markdown
----
-name: pr_review_workflow
-dependencies:
-  - fetch_pr_diff
-  - analyze_code_patterns
----
-
-# Purpose
-[What this workflow accomplishes]
-
-# Chain
-1. [Step] → fetch_pr_diff
-2. [Step] → analyze_code_patterns
-3. [Orchestration logic]
-
-# Prompt
-[The composed prompt]
+```
+skills/<skill-name>/
+├── SKILL.md          # Required — eagerly loaded (1,500–2,000 word target)
+├── template.md       # Optional — fill-in template
+├── examples/         # Optional — example outputs
+│   └── sample.md
+└── scripts/          # Optional — executable scripts
+    └── validate.sh
 ```
 
-**Naming Convention**: Self-describing workflow names with `_workflow` or `_chain` suffix
-- Examples: `pr_review_workflow.md`, `module_documentation_chain.md`, `security_audit_workflow.md`
-- The suffix makes it clear this is a composed workflow, not an atomic action
+Only `SKILL.md` frontmatter (`name` + `description`) loads at session start. Body and supporting files load on-demand when invoked.
 
-Chains are more than sequences—they encode decision points, error handling, and conditional branches. The chain abstraction captures the *reasoning flow*, not just the steps.
+### Formatting
 
-#### Tools (`tool_`)
+- Target 1,500–2,000 words per `SKILL.md`
+- No blockquotes in SKILL.md or command files — use plain text, headings, lists, code blocks
 
-Capability extensions that wrap external functionality. Tools give agents new powers: search the web, call an API, execute code.
+### Ubiquitous Language
 
-```markdown
----
-name: tool_github_api
----
-
-# Purpose
-[What capability this provides]
-
-# Interface
-[Input/output contract]
-
-# Configuration
-[MCP or integration details]
-```
-
-Tools are the bridge between the agent's reasoning and the world's state. They have contracts: defined inputs, expected outputs, failure modes.
-
-#### Agent Roles (`agent_`)
-
-Specialized personas for delegation. An agent role defines expertise, constraints, and behavioral patterns that can be invoked when needed.
+Within a skill, terms have precise meanings. Define a glossary when terms risk ambiguity:
 
 ```markdown
----
-name: agent_code_reviewer
----
-
-# Role
-[What this agent specializes in]
-
-# Expertise
-[What it knows and can do]
-
-# Constraints
-[Boundaries and limitations]
-
-# Voice
-[How it communicates]
-```
-
-Agent roles enable delegation within complex workflows. The "reviewer" agent has different expertise than the "architect" agent—invoking the right role at the right time produces better outcomes.
-
-**Organization**: By domain (business function)
-- `coding/` — Software development
-- `writing/` — Content creation
-- `ops/` — Automation and operations
-
----
-
-### Skills: Bounded Contexts
-
-**Inspiration**: Domain-Driven Design
-
-**Location**: `~/.claude/skills/[domain]/` per Claude Code documentation
-
-Skills are bounded contexts—coherent areas of domain knowledge with consistent language and clear boundaries.
-
-#### Ubiquitous Language
-
-Within a skill, terms have precise meanings. The `coding/` skill's "review" means code review with specific criteria. The `writing/` skill's "review" means editorial review with different criteria. Same word, different bounded contexts, different meanings.
-
-Document the language explicitly:
-
-```markdown
-# Coding Skill
-
 ## Glossary
 
 | Term | Meaning in this context |
@@ -226,153 +116,170 @@ Document the language explicitly:
 | Document | Docstrings and README generation |
 ```
 
-#### Context Boundaries
+## Commands
 
-Skills generally don't share assumptions. If `coding/` needs something from `writing/`, either the interface in the workflow chain is explicit, or consider abstracting foundational actions into shared/. This prevents concepts from one domain bleeding into another and creating confusion.
+Commands exist in three `commands/` subfolders. **Folder = tag = intent** — a file's location declares its type and lifecycle trajectory.
 
-```markdown
----
-name: coding
----
+| Folder | Tag | Purpose | Promotable? |
+|--------|-----|---------|:-----------:|
+| `commands/_dev/` | `[Skill]` | Draft skills — experimentation, iteration | ✅ → `skills/` |
+| `commands/combos/` | `[Combo]` | Chains skills across domains/plugins | ❌ stays as command |
+| `commands/specials/` | `[Special]` | Wrapped/modified variant of existing skill | ❌ stays as command |
 
-# Coding Skill
+`[Skill]`-tagged commands are promotion candidates. `[Combo]` and `[Special]` commands remain as commands — they compose or adapt skills rather than defining new ones.
 
-## Overview
-[What this bounded context covers]
+## Frontmatter
 
-## Language
-[Terms and their meanings here]
+Every command and SKILL.md file must include YAML frontmatter. Three fields are **always required**: `name`, `description`, `model`.
 
-## Capabilities
-| Task | Workflow |
-|------|----------|
-| Document module | `module_documentation_workflow` |
-| Review PR | `pr_review_workflow` |
+Reference: [Claude Code frontmatter](https://code.claude.com/docs/en/skills#frontmatter-reference).
 
-## Boundaries
-[What's explicitly outside this context]
+### Templates
 
-## Interfaces
-[How this context communicates with others]
-```
-
-#### Knowledge as Context
-
-Supporting materials in `references/` and `assets/` are part of the bounded context. Style guides, criteria, and examples in `references/` use the domain's language and are loaded at runtime. Templates, checklists, and data files in `assets/` support domain operations.
-
-```
-~/.claude/skills/coding/
-├── SKILL.md                    # Context definition
-├── scripts/
-│   └── validate_pr.sh          # Automated checks
-├── references/
-│   ├── python_style.md         # Domain conventions
-│   ├── review_criteria.md      # What "review" means here
-│   └── good_pr.md              # Pattern demonstration
-└── assets/
-    └── templates/
-        └── review_checklist.md # Review template
-```
-
-**Organization**: By bounded context (domain)
-- Each domain is a self-contained context
-- Cross-domain communication is explicit
-- Shared understanding is documented, not assumed
-
----
-
-## The `_dev/` Workspace
-
-Like dbt's dev schemas, `_dev/` isolates work-in-progress:
-
-```
-commands/_dev/
-├── wip_new_workflow.md        # Drafting a workflow chain
-├── wip_security_check.md      # Iterating on an action
-└── wip_ops_skill.md           # Sketching a new bounded context
-```
-
-Any abstraction level can be drafted here. Move to the appropriate layer when ready.
-
----
-
-## Documentation Structure
-
-**Inspiration**: MkDocs
-
-The `docs/` directory follows MkDocs conventions for straightforward documentation that can be built and deployed.
-
-```
-docs/
-├── index.md                    # Homepage (required by convention)
-├── getting-started.md          # Onboarding
-├── reference/                  # Technical reference
-│   ├── conventions.md          # Naming, structure rules
-│   └── lineage.md              # Dependency graph
-└── guides/                     # How-to guides
-    └── development-workflow.md
-```
-
-**Key conventions**:
-- `index.md` serves as the documentation homepage
-- Nested directories create navigation hierarchy
-- Files starting with `_` are excluded (MkDocs ignores dotfiles and underscored files)
-
-### Excluding `_dev/` from Documentation
-
-The `_dev/` workspace contains work-in-progress that should never appear in published documentation:
-
+**Draft** (`commands/_dev/`):
 ```yaml
-# mkdocs.yml (if using MkDocs)
-nav:
-  - Home: index.md
-  - Getting Started: getting-started.md
-  - Reference:
-    - Conventions: reference/conventions.md
-    - Lineage: reference/lineage.md
-  # _dev/ is not listed - excluded from nav
-
-# Explicitly exclude from build
-exclude_docs: |
-  _dev/
+---
+name: skill-name
+description: "[Skill] [Sonnet] Action-oriented imperative phrase, 5-20 words"
+model: claude-sonnet-4-5
+---
 ```
 
-Whether building local docs or publishing, `_dev/` stays private. The underscore prefix signals "internal only" across the entire structure.
+**Composite** (`commands/combos/`):
+```yaml
+---
+name: command-name
+description: "[Combo] [Sonnet] Chain multiple operations across plugins"
+model: claude-sonnet-4-5
+depends_on:
+  - skills/skill-one
+  - skills/skill-two
+---
+```
+
+**Production skill** (`skills/<name>/SKILL.md`):
+```yaml
+---
+name: skill-name
+description: "[Skill] [Sonnet] Action-oriented imperative phrase, 5-20 words"
+model: claude-sonnet-4-5
+disable-model-invocation: true
+user-invocable: true
+version: 1.0.0
+---
+```
+
+### Description Field Format
+
+```
+[<type>] [<model>] <description>
+```
+
+| Component | Required | Values | Notes |
+|-----------|:--------:|--------|-------|
+| `<type>` | Yes | `[Skill]`, `[Combo]`, `[Special]` | Mirrors folder location |
+| `<model>` | Conditional | `[Opus]`, `[Sonnet]`, `[Haiku]` | Omit if `model: inherit` |
+| `<description>` | Yes | Imperative phrase, 5–20 words, ≤1000 chars | Action-oriented |
+
+**Examples**:
+```yaml
+description: "[Skill] [Opus] Install macOS software and update setup script"
+description: "[Combo] [Sonnet] Install dependencies and configure development environment"
+description: "[Special] [Haiku] Remove dev artifacts excluding local config"
+```
+
+### Field Reference
+
+| Field | Required | Values | Purpose |
+|-------|:--------:|--------|---------|
+| `name` | **Yes** | kebab-case, max 64 chars | Unique identifier; becomes `/slash-command` |
+| `description` | **Yes** | `[<type>] [<model>] <text>`, max 1024 chars | Tags + action phrase; auto-loaded at session start |
+| `model` | **Yes** | model ID or `inherit` | Which model runs this skill |
+| `disable-model-invocation` | No | boolean (default: `true`) | `true` = only user can invoke |
+| `user-invocable` | No | boolean (default: `true`) | `false` = only model can invoke |
+| `allowed-tools` | No | comma-separated tool names | Tools usable without per-use approval |
+| `context` | No | `fork` | Runs skill as isolated subagent |
+| `agent` | No | `Explore`, `Plan`, or custom | Subagent type when `context: fork` |
+| `mode` | No | boolean | `true` = categorized as a mode command |
+| `version` | No | semver | Skill version tracking |
+| `depends_on` | No | list of skill paths | Cross-skill/plugin dependencies |
 
 ---
 
-## Shared Commands
+## Lifecycle
 
-Cross-cutting concerns that apply across bounded contexts:
+Every skill moves through three stages. Promotion = location + structure change.
 
 ```
-shared/
-├── concise.md           # Output constraints
-├── format_markdown.md   # Formatting rules
-└── persona_expert.md    # Voice modifier
+ ┌──────────────┐     promote      ┌────────────────┐     distribute    ┌─────────────────────┐
+ │  Development  │ ──────────────→ │   Production    │ ──────────────→ │   Plugin             │
+ │  _dev/*.md    │                 │   skills/*/     │                 │   versioned package  │
+ └──────────────┘                  └────────────────┘                 └─────────────────────┘
+  [Skill] tag                      full directory                      domain-bounded context
 ```
 
-These are explicitly shared—they don't belong to any single context. Reference by path or copy what you need.
+| Stage | Location | Structure | Purpose |
+|-------|----------|-----------|---------|
+| **Development** | `commands/_dev/<name>.md` | Single file + frontmatter | Experimentation |
+| **Production** | `skills/<name>/` | SKILL.md + templates/examples/scripts | Validated capability |
+| **Distributed** | Plugin marketplace repo | Full skill + plugin metadata | Versioned, cross-project reuse |
+
+**Promotion criteria**:
+- **_dev → skills**: Stable interface, reusable pattern
+- **skills → plugin**: Generalized beyond single project, versioned, documented
+
+**Plugin = domain boundary.** Promoting a skill to a plugin establishes the bounded context. Tags organize within a project; plugins organize across projects.
 
 ---
 
 ## Development Workflow
 
 ```
-1. USE CONTEXT       2. IDENTIFY GAP        3. DEVELOP UP          4. EXPOSE DOWN
-   ↓                    ↓                      ↓                      ↓
-   Skill works?    →   Missing workflow,  →   Build in act       →   Chain in chain
-   Yes: done           tool, or action?       or chain               Expose in skills
+1. CHECK CONTEXT     2. IDENTIFY GAP      3. DRAFT IN _DEV/    4. PROMOTE TO SKILLS/
+   ↓                    ↓                    ↓                    ↓
+   Skill exists?   →   Missing capability →  Create .md file  →  Migrate to skills/
+   Yes: done                                 with [Skill] tag     full structure
 ```
 
-**Example**: PR reviews need security analysis.
+**Example**: Software installation skill needed.
 
-1. **Use context**: `coding/SKILL.md` has review but no security focus
-2. **Check workflows**: `pr_review_workflow` exists, no security step
-3. **Check actions**: No security actions exist
-4. **Build action**: Create `analyze_security_patterns.md` in act/security/
-5. **Extend workflow**: Add security step to `pr_review_workflow`
-6. **Context gains capability**: Skill inherits through workflow chain
+1. **Check context**: No existing skill handles macOS software installation
+2. **Draft**: Create `commands/_dev/install-software.md`:
+   ```yaml
+   ---
+   name: install-software
+   description: "[Skill] [Opus] Install macOS software and update setup script"
+   model: claude-opus-4-5
+   ---
+   ```
+3. **Iterate**: Test via `/install-software`, refine
+4. **Promote**: Migrate to `skills/install-software/`:
+   ```
+   skills/install-software/
+   ├── SKILL.md
+   ├── template.md
+   └── scripts/
+       └── validate.sh
+   ```
+5. **Document**: Add to `docs/reference/lineage.md`
+
+---
+
+## Plugin Distribution
+
+When a skill proves valuable beyond a single project, promote to a plugin marketplace.
+
+1. **Extract**: Copy skill folder to marketplace repo
+2. **Add metadata**: Plugin manifest with versioning, dependencies, scope
+3. **Version**: Semantic versioning (semver) for releases
+4. **Publish**: Push to plugin marketplace repo
+5. **Install**: `claude plugin install <plugin@marketplace> -s user` or `-s project`
+
+`_dev/` is excluded from plugin distribution. The underscore prefix signals "internal only."
+
+**Active plugins** (from CLAUDE.md):
+- `unique@skill-tree` — Project scaffolding, PRs, cleanup, software management
+- `spam@tomago` — Claude Code submission/activation analytics
 
 ---
 
@@ -381,88 +288,90 @@ These are explicitly shared—they don't belong to any single context. Reference
 Document dependencies in `docs/lineage.md`:
 
 ```
-~/.claude/skills/coding/SKILL.md
-├── pr_review_workflow             (workflow)
-│   ├── fetch_pr_diff              (action)
-│   ├── analyze_code_patterns      (action)
-│   └── analyze_security_patterns  (action) ← new
-├── module_documentation_workflow  (workflow)
-│   └── generate_docstring         (action)
-└── agent_code_reviewer            (agent role)
+~/.claude/skills/
+├── install-software
+├── uninstall-software
+├── commit-and-push
+├── pull-request
+├── regen-claude
+├── claude-lint
+├── quick-clean-up
+├── init-python-project
+├── setup-claude-settings
+├── add-proj-toolstack
+└── package-project
 ```
 
-This is documentation, not enforcement.
+Lineage is documentation, not enforcement.
 
 ---
 
-## Honest Limitations
+## Documentation
 
-**No runtime composition.** LangChain chains execute at runtime with actual data flow. These chains are documentation of intended composition—the "chaining" is conceptual, not mechanical.
+**Inspiration**: MkDocs
 
-**No build step.** dbt compiles and executes in dependency order. Actions and workflows don't really "build" in the same way, but they have a lineage as they "build" on one another. Lineage should be maintained in a more programmatic way.
+```
+docs/
+├── index.md                    # Homepage
+├── getting-started.md          # Onboarding
+├── reference/
+│   ├── conventions.md          # Naming, structure, frontmatter schema
+│   └── lineage.md              # Dependency graph
+└── guides/
+    └── development-workflow.md # Skill lifecycle + promotion
+```
 
-**No shared type system.** DDD bounded contexts in code have explicit interfaces with typed contracts. Here, "interfaces" are sequences, command handoffs, and conventions enforced through discipline.
+---
 
-**This is a filing system with conceptual scaffolding.** The value is in the mental model: actions compose into workflows, workflows serve bounded contexts (skills). Without runtime tooling, discipline is on you.
+## Limitations
+
+**No build step.** Skills have lineage but no compilation or dependency-ordered execution. Lineage maintenance is manual.
+
+**No type system.** "Interfaces" between skills are conventions enforced via discipline and `depends_on` — not typed contracts.
+
+**Filing system with conceptual scaffolding.** Skills = source of truth, commands = projections, promotion = trust, plugins = domains. Without runtime tooling, discipline must be self-enforced.
 
 ---
 
 ## When This Helps
 
-- Many actions and workflows need organization
-- You think in terms of composition and domains
+- Many skills need organization beyond flat files
+- Composition and domain thinking fit the workflow
 - Multiple contributors need shared conventions
-- You want explicit boundaries between capability areas
+- Explicit boundaries between capability areas needed
 
 ## When This Hurts
 
-- Few actions or workflows (flat files suffice)
-- Solo work with stable patterns across a single domain (overhead without benefit)
-- You expect the structure to enforce something (it won't)
+- Few skills (flat files suffice)
+- Solo work with stable patterns (overhead without benefit)
+- Expectation that structure enforces constraints (it won't)
 
 ---
 
 ## References
 
-This structure draws inspiration from:
-
 **dbt (data build tool)**
-- Medallion architecture: staging → intermediate → marts
-- The transformation arc from source-conformed to business-conformed
+- Staging → intermediate → marts transformation arc
 - Development schemas for isolating work-in-progress
 - [How we structure our dbt projects](https://docs.getdbt.com/best-practices/how-we-structure/1-guide-overview)
 
-**LangChain**
-- Chains as compositional sequences of operations
-- Tools as capability extensions with defined interfaces
-- Agents as reasoning entities that leverage tools
-- [LangChain Conceptual Guide](https://python.langchain.com/docs/concepts/)
-
 **Domain-Driven Design (Eric Evans)**
-- Bounded contexts as areas of consistent language
-- Ubiquitous language within contexts
-- Explicit interfaces between contexts
-- Knowledge as part of the domain model
-- [Domain-Driven Design Reference](https://www.domainlanguage.com/ddd/reference/)
+- Bounded contexts, ubiquitous language, explicit interfaces
+- [DDD Reference](https://www.domainlanguage.com/ddd/reference/)
 
 **Cookiecutter Data Science (DrivenData)**
-- Opinionated project structure as a form of documentation
-- Conventions that encode team knowledge
-- Structure that scales from solo to team
+- Opinionated project structure as documentation
 - [Cookiecutter Data Science](https://cookiecutter-data-science.drivendata.org/opinions/)
-- [CCDS v2: Announcing the new Cookiecutter Data Science](https://drivendata.co/blog/ccds-v2)
+- [CCDS v2](https://drivendata.co/blog/ccds-v2)
 
 **MkDocs**
-- Straightforward documentation from Markdown sources
-- `docs/` directory with `index.md` as homepage convention
-- Navigation hierarchy from directory structure
+- Markdown docs with `docs/` + `index.md` convention
 - [Writing Your Docs](https://www.mkdocs.org/user-guide/writing-your-docs/)
 
 **Anthropic Claude**
-- Skills as domain knowledge packages in `~/.claude/skills/` per Claude Code documentation
-- Actions and workflows as reusable prompt patterns
-- [Claude Documentation](https://docs.anthropic.com/)
+- Skills as domain knowledge packages in `~/.claude/skills/`
+- [Claude Code Skills Documentation](https://code.claude.com/docs/en/skills)
 
 **Agent Skills**
-- Specification for building and structuring skills for agentic workflows
+- Specification for building agentic workflow skills
 - [Agent Skills Specification](https://agentskills.io/specification)
