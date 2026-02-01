@@ -300,6 +300,8 @@ When a skill proves valuable beyond a single project, promote to a plugin market
 - `unique@skill-tree` — Project scaffolding, PRs, cleanup, software management
 - `spam@tomago` — Claude Code submission/activation analytics
 
+**Plugin scope:** If a plugin contains more than 30 skills, consider splitting into separate domain-bounded plugins. This preserves coherence and keeps bounded contexts focused.
+
 ---
 
 ## Lineage
