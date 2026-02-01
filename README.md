@@ -29,6 +29,10 @@ Large systems decompose into bounded contexts — areas with consistent language
 
 A `coding` plugin's "review" means code review with specific criteria. A `writing` plugin's "review" means editorial review. Same word, different bounded contexts, different meanings. Cross-plugin dependencies are explicit via `depends_on`.
 
+### Self-Documenting Principle: Folder = Tag = Intent
+
+**Redundancy serves as consistency check.** A file's `commands/` subfolder, its `description` tag, and its lifecycle trajectory are the same signal expressed three ways. If a file is in `combos/` but tagged `[Skill]`, something's wrong. This triple-constraint makes the system self-auditable without tooling: the filesystem enforces intent through structure.
+
 ## Directory Structure
 
 ### Project Layout
@@ -88,11 +92,15 @@ Skills are the single source of truth. Commands are development artifacts or com
 ```
 skills/<skill-name>/
 ├── SKILL.md          # Required — eagerly loaded (1,500–2,000 word target)
-├── template.md       # Optional — fill-in template
+├── references/       # Optional — style guides, conventions, PDFs, example templates
+│   └── criteria.md
+├── assets/           # Optional — data files, images, templates
+│   └── checklist.md
+├── scripts/          # Optional — executable codefiles
+│   └── validate.sh
 ├── examples/         # Optional — example outputs
 │   └── sample.md
-└── scripts/          # Optional — executable scripts
-    └── validate.sh
+└── template.md       # Optional — fill-in template
 ```
 
 Only `SKILL.md` frontmatter (`name` + `description`) loads at session start. Body and supporting files load on-demand when invoked.
@@ -165,7 +173,18 @@ description: "[Skill] [Sonnet] Action-oriented imperative phrase, 5-20 words"
 model: claude-sonnet-4-5
 disable-model-invocation: true
 user-invocable: true
-version: 1.0.0
+---
+```
+
+**Skill within plugin** (`plugin-repo/skills/<name>/SKILL.md`):
+```yaml
+---
+name: skill-name
+description: "[Skill] [Sonnet] Action-oriented imperative phrase, 5-20 words"
+model: claude-sonnet-4-5
+disable-model-invocation: true
+user-invocable: true
+version: 1.0.0  # Required only for skills within plugins
 ---
 ```
 
@@ -201,7 +220,7 @@ description: "[Special] [Haiku] Remove dev artifacts excluding local config"
 | `context` | No | `fork` | Runs skill as isolated subagent |
 | `agent` | No | `Explore`, `Plan`, or custom | Subagent type when `context: fork` |
 | `mode` | No | boolean | `true` = categorized as a mode command |
-| `version` | No | semver | Skill version tracking |
+| `version` | No | semver | Skill version tracking — **only required for skills within a plugin** |
 | `depends_on` | No | list of skill paths | Cross-skill/plugin dependencies |
 
 ---
